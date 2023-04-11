@@ -1,0 +1,32 @@
+[package]
+name = "blumer-ms-comments"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4.3.1"
+anyhow = "1.0.69"
+async-graphql = { version = "5.0.6", features = ["dataloader", "chrono", "chrono-tz", "uuid", "uuid08"] }
+async-graphql-actix-web = "5.0.6"
+async-trait = "0.1.66"
+blumer-lib-authorization-rs = { path = "deps/blumer-lib-authorization-rs"}
+blumer-lib-auth-rs = { path = "deps/blumer-lib-auth-rs" }
+blumer-lib-errors = { path = "deps/blumer-lib-errors", features = ["scylla_db"] }
+capnp = "0.16.1"
+chrono = { version = "0.4.24", features = ["serde"] }
+cloudfront_sign = "0.2.1"
+dotenv = "0.15.0"
+env_logger = "0.10.0"
+log = "0.4.17"
+rdkafka = { version = "0.29.0", features = ["cmake-build", "ssl", "sasl"] }
+redis = { version = "0.22.3", features = ["tokio-comp", "connection-manager"] }
+scylla = "0.7.0"
+tokio = "1.26.0"
+uuid = { version = "1.3.0", features = ["serde", "v4"] }
+
+
+
+[build-dependencies]
+capnpc = "0.16.3"

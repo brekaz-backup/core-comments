@@ -1,0 +1,36 @@
+version: '3.2'
+
+services:
+  blumer_ms_comments:
+    build: .
+    container_name: blumer_ms_comments
+    restart: always
+    environment:
+      APP_NAME: BLUMER-MS-COMMENTS
+      GRAPHQL_HOST: 0.0.0.0
+      GRAPHQL_PORT: 9005
+
+      DATABASE_URI: "node-0.aws_us_east_1.28a0c7fd64b144a1e17e.clusters.scylla.cloud,node-1.aws_us_east_1.28a0c7fd64b144a1e17e.clusters.scylla.cloud,node-2.aws_us_east_1.28a0c7fd64b144a1e17e.clusters.scylla.cloud"
+      DATABASE_USERNAME: scylla
+      DATABASE_PASSWORD: h7LgFvrGk6NJf1I
+      REDIS_URL: redis://redis-container:6379/5
+
+      POST_AUTHORIZATION_SERVICE_URL: "http://authorization-rpc:50052"
+
+      KAFKA_BROKER: "b-1-public.devclustermsk.r795ga.c20.kafka.us-east-1.amazonaws.com:9196,b-3-public.devclustermsk.r795ga.c20.kafka.us-east-1.amazonaws.com:9196,b-2-public.devclustermsk.r795ga.c20.kafka.us-east-1.amazonaws.com:9196"
+      KAFKA_SECURITY_PROTOCOL: "SASL_SSL"
+      KAFKA_SASL_MECHANISMS: "SCRAM-SHA-512"
+      KAFKA_SASL_USERNAME: "user-msk-dev"
+      KAFKA_SASL_PASSWORD: "rP77qXpN35JEcZqcwCbN"
+
+    ports:
+      - "9005:9005"
+    networks:
+      - privet-net
+      - databases_database_redis
+
+networks:
+  privet-net:
+    external: true
+  databases_database_redis:
+    external: true
