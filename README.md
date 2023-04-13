@@ -82,6 +82,11 @@ To run this project, you will need to add the following environment variables to
 
 `KAFKA_SASL_PASSWORD` Kafka cluster password
 
+`AWS_CLOUDFRONT_URL` Address to connect to cloudfront server
+
+`AWS_CLOUDFRONT_KEY_PAIR_ID` Cloudfront key pair id
+
+`AWS_CLOUDFRONT_PRIVATE_KEY` Private key to connect to cloudfront server. IMPORTANT: The hash must be on a single line and explicitly include the /n and /r flags.
 
 ## Run Locally
 

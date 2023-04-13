@@ -9,26 +9,26 @@ pub fn comment_description_max_len(comment: &str) -> bool {
     comment.chars().count() > MAX_LEN
 }
 
-pub async fn s3_get_signed_url(key: Option<String>) -> Option<String> {
-    let private_key = tokio::fs::read_to_string("private_key.pem")
-        .await
-        .expect("Error when reading private key");
-    let options = SignedOptions {
-        key_pair_id: String::from("K3TWLQ3HHETAG3"),
-        private_key: private_key,
+pub async fn s3_get_signed_url(
+    aws_cloudfront_url: &String,
+    key_pair_id: &String,
+    private_key: &String,
+    key: Option<String>,
+) -> Option<String> {
+    let signed_options = SignedOptions {
+        key_pair_id: key_pair_id.to_string(),
+        private_key: private_key.to_string(),
         ..Default::default()
     };
     if let Some(key) = key {
-        let url: &str = &format!("https://d1pcqt6t6kr36e.cloudfront.net/{}", &key[..]);
-        let signed_url =
-            get_signed_url(&url, &options).expect("Error when getting CloudFront signed url");
-        // println!("{}", &signed_url);
+        let url: &str = &format!("{}/{}", aws_cloudfront_url, &key[..]);
+        let signed_url = get_signed_url(&url, &signed_options)
+            .expect("Error when getting CloudFront signed url");
         Some(signed_url)
     } else {
         None
     }
 }
-
 pub async fn can_view_post(
     mut post_client: PostAuthorization,
     post_id: Uuid,
@@ -50,11 +50,3 @@ pub async fn can_view_post(
     }
     Ok(can_view_post)
 }
-
-/*pub async fn can_view_comment(
-    ctx: &Context<'_>,
-    post_id: Uuid,
-    user_id: Uuid,
-)-> Result<Comment, AppError> {
-    Ok(Comment{})
-}*/

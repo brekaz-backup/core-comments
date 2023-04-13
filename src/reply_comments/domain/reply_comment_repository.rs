@@ -18,11 +18,28 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct ReplyCommentRepository {
     session: Arc<Session>,
+    aws_cloudfront_url: String,
+    aws_key_pair_id: String,
+    aws_cloudfront_private_key: String,
 }
 
 impl ReplyCommentRepository {
     pub fn new(session: Arc<Session>) -> Self {
-        ReplyCommentRepository { session }
+        let aws_cloudfront_private_key = std::env::var("AWS_CLOUDFRONT_PRIVATE_KEY")
+            .expect("Can't get cloudfront private key")
+            .replace("\\r", "\r")
+            .replace("\\n", "\n");
+        let aws_cloudfront_url =
+            std::env::var("AWS_CLOUDFRONT_URL").expect("Can't get cloudfront URL");
+        let aws_key_pair_id =
+            std::env::var("AWS_CLOUDFRONT_KEY_PAIR_ID").expect("Can't get cloudfront key pair id");
+
+        ReplyCommentRepository {
+            session,
+            aws_cloudfront_url,
+            aws_key_pair_id,
+            aws_cloudfront_private_key,
+        }
     }
 }
 
@@ -107,17 +124,27 @@ impl ReplyCommentRepositoryInterface for &ReplyCommentRepository {
         {
             let image: Option<String> = match image {
                 Some(image) => Some(
-                    s3_get_signed_url(Some(image))
-                        .await
-                        .expect("Error when converting image key to signed url"),
+                    s3_get_signed_url(
+                        &self.aws_cloudfront_url,
+                        &self.aws_key_pair_id,
+                        &self.aws_cloudfront_private_key,
+                        Some(image),
+                    )
+                    .await
+                    .expect("Error when converting image key to signed url"),
                 ),
                 None => None,
             };
             let audio: Option<String> = match audio {
                 Some(audio) => Some(
-                    s3_get_signed_url(Some(audio))
-                        .await
-                        .expect("Error when converting audio key to signed url"),
+                    s3_get_signed_url(
+                        &self.aws_cloudfront_url,
+                        &self.aws_key_pair_id,
+                        &self.aws_cloudfront_private_key,
+                        Some(audio),
+                    )
+                    .await
+                    .expect("Error when converting audio key to signed url"),
                 ),
                 None => None,
             };
@@ -191,17 +218,27 @@ impl ReplyCommentRepositoryInterface for &ReplyCommentRepository {
 
             next_row.image = match next_row.image {
                 Some(image) => Some(
-                    s3_get_signed_url(Some(image))
-                        .await
-                        .expect("Error when converting image key to signed url"),
+                    s3_get_signed_url(
+                        &self.aws_cloudfront_url,
+                        &self.aws_key_pair_id,
+                        &self.aws_cloudfront_private_key,
+                        Some(image),
+                    )
+                    .await
+                    .expect("Error when converting image key to signed url"),
                 ),
                 None => None,
             };
             next_row.audio = match next_row.audio {
                 Some(audio) => Some(
-                    s3_get_signed_url(Some(audio))
-                        .await
-                        .expect("Error when converting audio key to signed url"),
+                    s3_get_signed_url(
+                        &self.aws_cloudfront_url,
+                        &self.aws_key_pair_id,
+                        &self.aws_cloudfront_private_key,
+                        Some(audio),
+                    )
+                    .await
+                    .expect("Error when converting audio key to signed url"),
                 ),
                 None => None,
             };
