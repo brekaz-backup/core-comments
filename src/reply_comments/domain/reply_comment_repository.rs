@@ -5,7 +5,7 @@ use super::{
     DELETE_INACTIVE_REPLY_COMMENT, GET_COMMENTS_REPLY_BY_COMMENT_ID, GET_COMMENT_REPLY_BY_REPLY_ID,
     GET_INACTIVE_REPLY_COMMENT_BY_ID,
 };
-use crate::utils::general::s3_get_signed_url;
+use crate::utils::cloud_front_client::CloudFrontSigner;
 use anyhow::Result;
 use async_trait::async_trait;
 use blumer_lib_errors::AppError;
@@ -18,28 +18,11 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct ReplyCommentRepository {
     session: Arc<Session>,
-    aws_cloudfront_url: String,
-    aws_key_pair_id: String,
-    aws_cloudfront_private_key: String,
 }
 
 impl ReplyCommentRepository {
     pub fn new(session: Arc<Session>) -> Self {
-        let aws_cloudfront_private_key = std::env::var("AWS_CLOUDFRONT_PRIVATE_KEY")
-            .expect("Can't get cloudfront private key")
-            .replace("\\r", "\r")
-            .replace("\\n", "\n");
-        let aws_cloudfront_url =
-            std::env::var("AWS_CLOUDFRONT_URL").expect("Can't get cloudfront URL");
-        let aws_key_pair_id =
-            std::env::var("AWS_CLOUDFRONT_KEY_PAIR_ID").expect("Can't get cloudfront key pair id");
-
-        ReplyCommentRepository {
-            session,
-            aws_cloudfront_url,
-            aws_key_pair_id,
-            aws_cloudfront_private_key,
-        }
+        ReplyCommentRepository { session }
     }
 }
 
@@ -122,32 +105,8 @@ impl ReplyCommentRepositoryInterface for &ReplyCommentRepository {
             created_at,
         )) = first_int_val
         {
-            let image: Option<String> = match image {
-                Some(image) => Some(
-                    s3_get_signed_url(
-                        &self.aws_cloudfront_url,
-                        &self.aws_key_pair_id,
-                        &self.aws_cloudfront_private_key,
-                        Some(image),
-                    )
-                    .await
-                    .expect("Error when converting image key to signed url"),
-                ),
-                None => None,
-            };
-            let audio: Option<String> = match audio {
-                Some(audio) => Some(
-                    s3_get_signed_url(
-                        &self.aws_cloudfront_url,
-                        &self.aws_key_pair_id,
-                        &self.aws_cloudfront_private_key,
-                        Some(audio),
-                    )
-                    .await
-                    .expect("Error when converting audio key to signed url"),
-                ),
-                None => None,
-            };
+            let image: Option<String> = CloudFrontSigner::sing(image);
+            let audio: Option<String> = CloudFrontSigner::sing(audio);
             let comment_reply: CommentReplyEntity = CommentReplyEntity {
                 post_id,
                 reply_id,
@@ -216,32 +175,8 @@ impl ReplyCommentRepositoryInterface for &ReplyCommentRepository {
                 next_row.gif
             };
 
-            next_row.image = match next_row.image {
-                Some(image) => Some(
-                    s3_get_signed_url(
-                        &self.aws_cloudfront_url,
-                        &self.aws_key_pair_id,
-                        &self.aws_cloudfront_private_key,
-                        Some(image),
-                    )
-                    .await
-                    .expect("Error when converting image key to signed url"),
-                ),
-                None => None,
-            };
-            next_row.audio = match next_row.audio {
-                Some(audio) => Some(
-                    s3_get_signed_url(
-                        &self.aws_cloudfront_url,
-                        &self.aws_key_pair_id,
-                        &self.aws_cloudfront_private_key,
-                        Some(audio),
-                    )
-                    .await
-                    .expect("Error when converting audio key to signed url"),
-                ),
-                None => None,
-            };
+            next_row.image = CloudFrontSigner::sing(next_row.image);
+            next_row.audio = CloudFrontSigner::sing(next_row.audio);
 
             comment_replies.push(next_row);
         }

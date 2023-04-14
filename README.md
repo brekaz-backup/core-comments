@@ -32,6 +32,7 @@ Simply go over the following checklist:
 - [blumer-lib-errors](https://github.com/blumerapi/blumer-lib-errors)
 - [blumer-lib-auth-rs](https://github.com/blumerapi/blumer-lib-auth-rs)
 - [blumer-lib-authorization-rs](https://github.com/blumerapi/blumer-lib-authorization-rs)
+3. Add private_key.pem file to root folder
 
 
 ## Building
@@ -86,7 +87,7 @@ To run this project, you will need to add the following environment variables to
 
 `AWS_CLOUDFRONT_KEY_PAIR_ID` Cloudfront key pair id
 
-`AWS_CLOUDFRONT_PRIVATE_KEY` Private key to connect to cloudfront server. IMPORTANT: The hash must be on a single line and explicitly include the /n and /r flags.
+`AWS_CLOUDFRONT_PRIVATE_KEY` Path of private key file.
 
 ## Run Locally
 

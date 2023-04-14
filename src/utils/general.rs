@@ -1,7 +1,6 @@
 use blumer_lib_authorization_rs::clients::post::Post;
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use blumer_lib_errors::AppError;
-use cloudfront_sign::{get_signed_url, SignedOptions};
 use uuid::Uuid;
 
 pub fn comment_description_max_len(comment: &str) -> bool {
@@ -9,26 +8,6 @@ pub fn comment_description_max_len(comment: &str) -> bool {
     comment.chars().count() > MAX_LEN
 }
 
-pub async fn s3_get_signed_url(
-    aws_cloudfront_url: &String,
-    key_pair_id: &String,
-    private_key: &String,
-    key: Option<String>,
-) -> Option<String> {
-    let signed_options = SignedOptions {
-        key_pair_id: key_pair_id.to_string(),
-        private_key: private_key.to_string(),
-        ..Default::default()
-    };
-    if let Some(key) = key {
-        let url: &str = &format!("{}/{}", aws_cloudfront_url, &key[..]);
-        let signed_url = get_signed_url(&url, &signed_options)
-            .expect("Error when getting CloudFront signed url");
-        Some(signed_url)
-    } else {
-        None
-    }
-}
 pub async fn can_view_post(
     mut post_client: PostAuthorization,
     post_id: Uuid,

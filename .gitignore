@@ -1,3 +1,4 @@
 /target
 /deps
 .env
+private_key.pem

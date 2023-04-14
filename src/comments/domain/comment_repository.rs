@@ -3,7 +3,7 @@ use super::{
     CREATE_INACTIVE_COMMENT, DELETE_COMMENT, DELETE_INACTIVE_COMMENT, GET_COMMENTS_BY_POST_ID,
     GET_COMMENT_BY_COMMENT_ID, GET_INACTIVE_COMMENT_BY_ID,
 };
-use crate::utils::general::s3_get_signed_url;
+use crate::utils::cloud_front_client::CloudFrontSigner;
 use anyhow::Result;
 use async_trait::async_trait;
 use blumer_lib_errors::AppError;
@@ -16,28 +16,11 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct CommentRepository {
     session: Arc<Session>,
-    aws_cloudfront_url: String,
-    aws_key_pair_id: String,
-    aws_cloudfront_private_key: String,
 }
 
 impl CommentRepository {
     pub fn new(session: Arc<Session>) -> Self {
-        let aws_cloudfront_private_key = std::env::var("AWS_CLOUDFRONT_PRIVATE_KEY")
-            .expect("Can't get cloudfront private key")
-            .replace("\\r", "\r")
-            .replace("\\n", "\n");
-        let aws_cloudfront_url =
-            std::env::var("AWS_CLOUDFRONT_URL").expect("Can't get cloudfront URL");
-        let aws_key_pair_id =
-            std::env::var("AWS_CLOUDFRONT_KEY_PAIR_ID").expect("Can't get cloudfront key pair id");
-
-        CommentRepository {
-            session,
-            aws_cloudfront_url,
-            aws_key_pair_id,
-            aws_cloudfront_private_key,
-        }
+        CommentRepository { session }
     }
 }
 
@@ -117,32 +100,8 @@ impl CommentRepositoryInterface for &CommentRepository {
                 next_row.gif
             };
 
-            next_row.image = match next_row.image {
-                Some(image) => Some(
-                    s3_get_signed_url(
-                        &self.aws_cloudfront_url,
-                        &self.aws_key_pair_id,
-                        &self.aws_cloudfront_private_key,
-                        Some(image),
-                    )
-                    .await
-                    .expect("Error when converting image key to signed url"),
-                ),
-                None => None,
-            };
-            next_row.audio = match next_row.audio {
-                Some(audio) => Some(
-                    s3_get_signed_url(
-                        &self.aws_cloudfront_url,
-                        &self.aws_key_pair_id,
-                        &self.aws_cloudfront_private_key,
-                        Some(audio),
-                    )
-                    .await
-                    .expect("Error when converting audio key to signed url"),
-                ),
-                None => None,
-            };
+            next_row.image = CloudFrontSigner::sing(Some("images/29f90fb7-3617-4a1a-98f8-4e6d930430bc/985011a5-346e-475e-a0a0-0f481ede492c.jpg".to_string()));
+            next_row.audio = CloudFrontSigner::sing(next_row.audio);
 
             comments.push(next_row);
         }
@@ -181,32 +140,8 @@ impl CommentRepositoryInterface for &CommentRepository {
         if let Some((comment_id, post_id, user_id, description, image, audio, gif, created_at)) =
             first_int_val
         {
-            let image: Option<String> = match image {
-                Some(image) => Some(
-                    s3_get_signed_url(
-                        &self.aws_cloudfront_url,
-                        &self.aws_key_pair_id,
-                        &self.aws_cloudfront_private_key,
-                        Some(image),
-                    )
-                    .await
-                    .expect("Error when converting image key to signed url"),
-                ),
-                None => None,
-            };
-            let audio: Option<String> = match audio {
-                Some(audio) => Some(
-                    s3_get_signed_url(
-                        &self.aws_cloudfront_url,
-                        &self.aws_key_pair_id,
-                        &self.aws_cloudfront_private_key,
-                        Some(audio),
-                    )
-                    .await
-                    .expect("Error when converting audio key to signed url"),
-                ),
-                None => None,
-            };
+            let image: Option<String> = CloudFrontSigner::sing(image);
+            let audio: Option<String> = CloudFrontSigner::sing(audio);
 
             // Convert created_at to String
             let comment: CommentEntity = CommentEntity {
