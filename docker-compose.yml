@@ -23,6 +23,10 @@ services:
       KAFKA_SASL_USERNAME: "user-msk-dev"
       KAFKA_SASL_PASSWORD: "rP77qXpN35JEcZqcwCbN"
 
+      AWS_CLOUDFRONT_URL: https://d1pcqt6t6kr36e.cloudfront.net
+      AWS_CLOUDFRONT_KEY_PAIR_ID: K3TWLQ3HHETAG3
+      AWS_CLOUDFRONT_PRIVATE_KEY: private_key.pem
+
     ports:
       - "9005:9005"
     networks:
