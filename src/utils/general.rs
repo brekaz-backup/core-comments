@@ -4,7 +4,7 @@ use blumer_lib_errors::AppError;
 use uuid::Uuid;
 
 pub fn comment_description_max_len(comment: &str) -> bool {
-    const MAX_LEN: usize = 200;
+    const MAX_LEN: usize = 250;
     comment.chars().count() > MAX_LEN
 }
 

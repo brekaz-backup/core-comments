@@ -10,7 +10,7 @@ impl CommentMapper {
         let final_datetime = initial_datetime
             .checked_add_signed(entity.created_at)
             .unwrap();
-        let created_at = final_datetime.format("%Y-%m-%d %H:%M:%S").to_string();
+        let created_at = final_datetime.format("%Y-%m-%dT%H:%M:%S.%3f%Z").to_string();
         CommentOutput {
             id: entity.comment_id.to_string().into(),
             post_id: entity.post_id,

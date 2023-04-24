@@ -100,7 +100,7 @@ impl CommentRepositoryInterface for &CommentRepository {
                 next_row.gif
             };
 
-            next_row.image = CloudFrontSigner::sing(Some("images/29f90fb7-3617-4a1a-98f8-4e6d930430bc/985011a5-346e-475e-a0a0-0f481ede492c.jpg".to_string()));
+            next_row.image = CloudFrontSigner::sing(next_row.image);
             next_row.audio = CloudFrontSigner::sing(next_row.audio);
 
             comments.push(next_row);
