@@ -11,7 +11,6 @@ use crate::comments::infrastructure::kafka::{
 };
 use crate::utils::general::{can_view_post, comment_description_max_len};
 use anyhow::Result;
-use async_graphql::*;
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use blumer_lib_errors::AppError;
 use uuid::Uuid;
@@ -31,9 +30,7 @@ impl CreateCommentUseCase {
             comment.post_id.to_string().parse::<Uuid>().unwrap(),
             user_id,
         )
-        .await
-        .extend()
-        .unwrap();
+        .await?;
 
         let comment_id = Uuid::new_v4();
 

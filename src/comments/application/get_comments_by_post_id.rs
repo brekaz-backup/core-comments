@@ -3,7 +3,6 @@ use crate::comments::domain::{
 };
 use crate::utils::general::can_view_post;
 use anyhow::Result;
-use async_graphql::*;
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use blumer_lib_errors::AppError;
 use uuid::Uuid;
@@ -19,10 +18,7 @@ impl GetCommentsByPostIdUseCase {
         user_id: Uuid,
         next_page: Option<String>,
     ) -> Result<(Vec<CommentEntity>, String), AppError> {
-        can_view_post(post_authorization, post_id, user_id)
-            .await
-            .extend()
-            .unwrap();
+        can_view_post(post_authorization, post_id, user_id).await?;
 
         let incoming_page_state: Option<Vec<u8>>;
         let mut comment_page_state_id: String;

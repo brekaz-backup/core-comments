@@ -12,7 +12,6 @@ use crate::comments::infrastructure::kafka::{
 use crate::reply_comments::domain::ReplyCommentRepositoryInterface;
 use crate::utils::general::can_view_post;
 use anyhow::Result;
-use async_graphql::*;
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use blumer_lib_errors::AppError;
 use uuid::Uuid;
@@ -32,9 +31,7 @@ impl DeleteCommentUseCase {
         let comment_id = comment.comment_id.to_string().parse::<Uuid>().unwrap();
 
         let original_post_owner_id = can_view_post(post_authorization, post_id, user_id)
-            .await
-            .extend()
-            .unwrap()
+            .await?
             .data
             .unwrap()
             .owner_id;
