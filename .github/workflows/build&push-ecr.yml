@@ -1,0 +1,93 @@
+name: deployment microservice
+on: 
+  push:
+    branches:
+      - main
+      - master
+env:
+  # CLI envs
+  KUBECTL_VERSION: v1.26.2
+
+  # Project envs
+  LANGUAGE: node
+  LANGUAGE_VERSION: 1.19
+  WORKING_DIRECTORY: .
+  NAME_UPPERCASE: ${{vars.NAME_UPPERCASE}}
+  NAME_LOWERCASE: ${{vars.NAME_LOWERCASE}}
+  READY_TESTING: NON
+
+  # Cloud envs aws
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: us-east-1
+
+  # ECR credentials
+  AWS_ECR_REGISTRY: ${{ secrets.AWS_ECR_REGISTRY }}
+
+  # Docker image info
+  DOCKER_FILE_PATH: zarf/docker/
+  DOCKER_FILE_NAME: Dockerfile
+
+  # Deployment variables
+  K8S_NS_DEV: development
+  K8S_NS_PND: production
+  K8S_CPORT: 3001
+  K8S_C_GRAPHQL_PORT: 5001
+  IMAGE_TAG: ${{ github.sha }}
+
+  # EKS variables
+  EKS_CLUSTER_CHAT_PDN: prod-eks-chat-services
+  EKS_CLUSTER_CHAT_DEV: dev-eks-chat-services
+
+jobs:
+  continuous-delivery-up-image:
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: CD - UP - Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: CD - UP - Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: CD - UP - Build, tag, and push image to Amazon AWS_ECR_REGISTRY
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ env.AWS_ECR_REGISTRY }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          IMAGE_NAME: ${{ env.NAME_LOWERCASE }}
+          DOCKER_FILE_PATH: ${{ env.DOCKER_FILE_PATH }}
+          DOCKER_FILE_NAME: ${{ env.DOCKER_FILE_NAME }}
+          TOKEN_GITHUB: ${{ secrets.TOKEN_GITHUB }}
+        run: |
+          # download deps
+          mkdir deps
+          cd deps
+
+          git clone https://${{ env.TOKEN_GITHUB }}@github.com/blumerapi/blumer-lib-auth-rs.git
+          ls -la
+          git clone https://${{ env.TOKEN_GITHUB }}@github.com/blumerapi/blumer-lib-errors.git
+          ls -la
+          git clone https://${{ env.TOKEN_GITHUB }}@github.com/blumerapi/blumer-lib-authorization-rs.git
+          ls -la 
+          pwd
+          
+          cd ..
+
+          # Build docker image
+          docker build -t $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG -f $DOCKER_FILE_NAME ./
+          
+          # Tag docker image
+          docker tag $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG $ECR_REGISTRY/$IMAGE_NAME:latest
+          # Push docker image to AWS ECR
+          docker push $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$IMAGE_NAME:latest
+  
