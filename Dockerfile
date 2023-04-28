@@ -8,7 +8,6 @@ COPY ./schema ./schema
 COPY ./Cargo.toml ./
 COPY ./src ./src
 COPY ./build.rs ./build.rs
-COPY ./private_key.pem ./private_key.pem
 COPY ./deps ./deps
 
 RUN cargo chef prepare --recipe-path recipe.json
