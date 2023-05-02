@@ -76,8 +76,11 @@ jobs:
           cd blumer-lib-auth-rs
           git checkout 855939996938e7579ed6937b43b0dcb47e6195fe
           cd ..
-          git clone https://${{ env.TOKEN_GITHUB }}@github.com/blumerapi/blumer-lib-errors.git
 
+          git clone https://${{ env.TOKEN_GITHUB }}@github.com/blumerapi/blumer-lib-errors.git
+          c blumer-lib-errors
+          git checkout 83d2689a92c4f81b9ed5b167689632603c2dfce3
+          cd ..
           
           git clone https://${{ env.TOKEN_GITHUB }}@github.com/blumerapi/blumer-lib-authorization-rs.git
           cd blumer-lib-authorization-rs
