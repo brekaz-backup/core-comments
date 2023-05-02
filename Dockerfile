@@ -1,4 +1,4 @@
-FROM lukemathwalker/cargo-chef:latest AS chef
+FROM lukemathwalker/cargo-chef:0.1.54-rust-1.68-buster AS chef
 RUN apt update && apt install -y cmake capnproto libsasl2-dev protobuf-compiler libprotobuf-dev \
     libssl-dev libz-dev libclang-dev libsasl2-dev
 WORKDIR /app
