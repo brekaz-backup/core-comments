@@ -81,10 +81,9 @@ jobs:
           cd blumer-lib-errors
           git checkout 83d2689a92c4f81b9ed5b167689632603c2dfce3
           cd ..
+
           git clone https://${{ env.TOKEN_GITHUB }}@github.com/blumerapi/blumer-lib-authorization-rs.git
-          cd blumer-lib-authorization-rs
-          git checkout 7001736c3d76f492ab8d77db5f232fb8912e3efb
-          cd ..
+
 
           cd ..
 
