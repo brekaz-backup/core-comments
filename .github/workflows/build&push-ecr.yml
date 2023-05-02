@@ -77,7 +77,13 @@ jobs:
           git checkout 855939996938e7579ed6937b43b0dcb47e6195fe
           cd ..
           git clone https://${{ env.TOKEN_GITHUB }}@github.com/blumerapi/blumer-lib-errors.git
+
+          
           git clone https://${{ env.TOKEN_GITHUB }}@github.com/blumerapi/blumer-lib-authorization-rs.git
+          cd blumer-lib-authorization-rs
+          git checkout 7001736c3d76f492ab8d77db5f232fb8912e3efb
+          cd ..
+
           cd ..
 
           # Build docker image
