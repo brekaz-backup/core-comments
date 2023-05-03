@@ -6,6 +6,7 @@ use crate::reply_comments::domain::{
 };
 use anyhow::Result;
 use blumer_lib_errors::AppError;
+use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct MoveReplyCommentToActiveUseCase;
@@ -18,10 +19,16 @@ impl MoveReplyCommentToActiveUseCase {
         //find inactive reply comment
         let reply_comment_db = reply_comment_repo
             .get_inactive_reply_comment_by_id(
-                &Uuid::parse_str(&reply_comment.parent_id).expect("Error when parsing parent_id"),
-                &Uuid::parse_str(&reply_comment.comment_id).expect("Error when parsing comment_id"),
-                &Uuid::parse_str(&reply_comment.reply_id.unwrap())
-                    .expect("Error when parsing reply_id"),
+                &Uuid::from_str(&reply_comment.parent_id)
+                    .map_err(|e| AppError::DatasourceError(e.to_string()))?,
+                &Uuid::from_str(&reply_comment.comment_id)
+                    .map_err(|e| AppError::DatasourceError(e.to_string()))?,
+                &Uuid::from_str(
+                    &reply_comment
+                        .reply_id
+                        .ok_or(AppError::DatasourceError("reply_id null".to_owned()))?,
+                )
+                .map_err(|e| AppError::DatasourceError(e.to_string()))?,
             )
             .await?
             .ok_or(AppError::DatasourceError(

@@ -9,6 +9,7 @@ use crate::reply_comments::application::MoveReplyCommentToActiveUseCase;
 use crate::reply_comments::domain::ReplyCommentRepository;
 use anyhow::Result;
 use async_trait::async_trait;
+use blumer_lib_errors::AppError;
 use log::info;
 use rdkafka::{
     message::{BorrowedMessage, OwnedMessage},
@@ -31,9 +32,9 @@ impl KafkaConsumer {
         }
     }
 
-    pub async fn comment_upload(&self, payload: &[u8]) {
-        let event = CommentUploadMapper::event(&payload).await.unwrap();
-        let _ = match event.comment_type {
+    pub async fn comment_upload(&self, payload: &[u8]) -> Result<(), AppError> {
+        let event = CommentUploadMapper::event(&payload).await?;
+        match event.comment_type {
             CommentTypeEntity::Comment => {
                 MoveCommentToActiveUseCase::execute(&self.comment_repository, event).await
             }
@@ -41,7 +42,7 @@ impl KafkaConsumer {
                 MoveReplyCommentToActiveUseCase::execute(&self.reply_comment_repository, event)
                     .await
             }
-        };
+        }
     }
 }
 
@@ -54,11 +55,21 @@ impl KafkaConsumerInterface for KafkaConsumer {
     async fn record_owned_message_receipt(&self, msg: &OwnedMessage) -> Result<()> {
         //info!("Message received Owned: {:?}", msg);
 
-        let payload = msg.payload().expect("Kafka message should contain payload");
-        match msg.topic() {
-            KAFKA_TOPIC_COMMENT_UPLOAD => self.comment_upload(payload).await,
-            _ => {}
-        };
+        match msg.payload() {
+            Some(payload) => {
+                let result: Result<(), AppError> = match msg.topic() {
+                    KAFKA_TOPIC_COMMENT_UPLOAD => self.comment_upload(payload).await,
+                    _ => Ok({}),
+                };
+
+                if let Err(err) = result {
+                    log::error!("Error: {:?}", err);
+                }
+            }
+            None => {
+                log::error!("Kafka message has no payload");
+            }
+        }
         Ok(())
     }
 }

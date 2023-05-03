@@ -4,6 +4,7 @@ use crate::media_comments::infrastructure::capn_proto::models::{
 };
 use anyhow::Result;
 use blumer_lib_errors::AppError;
+use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct MoveCommentToActiveUseCase;
@@ -16,8 +17,10 @@ impl MoveCommentToActiveUseCase {
         //find inactive comment
         let comment_db = comment_repo
             .get_inactive_comment_by_id(
-                &Uuid::parse_str(&comment.parent_id).expect("Error when parsing parent_id"),
-                &Uuid::parse_str(&comment.comment_id).expect("Error when parsing comment_id"),
+                &Uuid::from_str(&comment.parent_id)
+                    .map_err(|e| AppError::DatasourceError(e.to_string()))?,
+                &Uuid::from_str(&comment.comment_id)
+                    .map_err(|e| AppError::DatasourceError(e.to_string()))?,
             )
             .await?
             .ok_or(AppError::DatasourceError(

@@ -37,14 +37,16 @@ async fn main() -> std::io::Result<()> {
     ScyllaInit::create_materialized_views(&scylla_session).await;
     let scylla_session: Arc<Session> = Arc::new(ScyllaConfig::create_scylla_session().await);
     //redis
-    let redis = redis::Client::open(std::env::var("REDIS_URL").expect("Can't get DB URL")).unwrap();
+    let redis =
+        redis::Client::open(std::env::var("REDIS_URL").expect("Can't get REDIS_URL env var"))
+            .expect("Can't connect to redis");
     // initialize authorization service client
     let post_authorization: PostAuthorization = PostAuthorization::new(
         std::env::var("POST_AUTHORIZATION_SERVICE_URL")
-            .expect("Can't get Authorization Service URL"),
+            .expect("Can't get POST_AUTHORIZATION_SERVICE_URL env var"),
     )
     .await
-    .unwrap();
+    .expect("Can't connect to post authorization RPC server");
 
     let state: AppState = AppState {
         comment_repository: CommentRepository::new(scylla_session.clone()),
@@ -54,8 +56,11 @@ async fn main() -> std::io::Result<()> {
         kafka_producer: KafkaProducer::new(),
     };
     let schema = web::Data::new(create_schema_with_context(state, post_authorization));
-    let host: String = std::env::var("GRAPHQL_HOST").unwrap();
-    let port: u16 = std::env::var("GRAPHQL_PORT").unwrap().parse().unwrap();
+    let host: String = std::env::var("GRAPHQL_HOST").expect("Can't get GRAPHQL_HOST env var");
+    let port: u16 = std::env::var("GRAPHQL_PORT")
+        .expect("Can't get GRAPHQL_PORT env var")
+        .parse()
+        .expect("GRAPHQL_PORT isn't a number");
     println!("GraphiQL IDE: http://{}:{}", host, port);
 
     let comments_consumer = KafkaConsumer::new(

@@ -17,6 +17,7 @@ use crate::utils::general::can_view_post;
 use anyhow::Result;
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use blumer_lib_errors::AppError;
+use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct DeleteReplyCommentUseCase;
@@ -29,40 +30,38 @@ impl DeleteReplyCommentUseCase {
         user_id: Uuid,
         kafka_producer: &KafkaProducer,
     ) -> Result<bool, AppError> {
-        let post_owner_id = can_view_post(
-            post_authorization,
-            reply_comment.post_id.to_string().parse::<Uuid>().unwrap(),
-            user_id,
-        )
-        .await?
-        .data
-        .unwrap()
-        .owner_id;
+        let reply_comment_post_id = Uuid::from_str(&reply_comment.post_id)
+            .map_err(|e| AppError::DatasourceError(e.to_string()))?;
+        let reply_comment_comment_id = Uuid::from_str(&reply_comment.comment_id)
+            .map_err(|e| AppError::DatasourceError(e.to_string()))?;
+        let reply_comment_reply_id = Uuid::from_str(&reply_comment.reply_id)
+            .map_err(|e| AppError::DatasourceError(e.to_string()))?;
+
+        let post_owner_id = can_view_post(post_authorization, reply_comment_post_id, user_id)
+            .await?
+            .data
+            .unwrap()
+            .owner_id;
 
         let reply_comment_db = reply_comment_repo
             .get_comment_reply_by_id(
-                &Uuid::parse_str(&reply_comment.post_id.to_string())
-                    .expect("Error when parsing post_id"),
-                &Uuid::parse_str(&reply_comment.comment_id.to_string())
-                    .expect("Error when parsing comment_id"),
-                &Uuid::parse_str(&reply_comment.reply_id.to_string())
-                    .expect("Error when parsing reply_id"),
+                &reply_comment_post_id,
+                &reply_comment_comment_id,
+                &reply_comment_reply_id,
             )
-            .await
-            .expect("Error when getting reply comment")
-            .expect("Error when getting reply comment");
+            .await?
+            .ok_or(AppError::DatasourceError(
+                "Error getting comment".to_owned(),
+            ))?;
 
         if user_id != post_owner_id && reply_comment_db.user_id != user_id {
             return Ok(false);
         }
 
         let reply_comment_db = CommentReplyDeleteEntity {
-            post_id: Uuid::parse_str(&reply_comment.post_id.to_string())
-                .expect("Error when parsing post_id"),
-            comment_id: Uuid::parse_str(&reply_comment.comment_id.to_string())
-                .expect("Error when parsing comment_id"),
-            reply_id: Uuid::parse_str(&reply_comment.reply_id.to_string())
-                .expect("Error when parsing reply_id"),
+            post_id: reply_comment_post_id,
+            comment_id: reply_comment_comment_id,
+            reply_id: reply_comment_reply_id,
         };
 
         reply_comment_repo
@@ -76,7 +75,7 @@ impl DeleteReplyCommentUseCase {
             reply_id: reply_comment_db.reply_id,
             post_owner_id: post_owner_id,
         };
-        let message = CommentReplyDeleteMapper::proto(&obj).await.unwrap();
+        let message = CommentReplyDeleteMapper::proto(&obj).await?;
         kafka_producer
             .send_message(KAFKA_TOPIC_COMMENT_REPLY_DELETE, &message)
             .await;
@@ -85,7 +84,7 @@ impl DeleteReplyCommentUseCase {
             comment_id: reply_comment_db.comment_id,
             reply_id: reply_comment_db.reply_id,
         };
-        let message = ReplyCountsDeleteMapper::proto(&obj).await.unwrap();
+        let message = ReplyCountsDeleteMapper::proto(&obj).await?;
         kafka_producer
             .send_message(KAFKA_TOPIC_DELETE_REPLY_COUNTS, &message)
             .await;
@@ -94,7 +93,7 @@ impl DeleteReplyCommentUseCase {
             comment_id: reply_comment_db.comment_id,
             replies_count: -1,
         };
-        let message = CommentRepliesCounterMapper::proto(&obj).await.unwrap();
+        let message = CommentRepliesCounterMapper::proto(&obj).await?;
         kafka_producer
             .send_message(KAFKA_TOPIC_COMMENT_REPLIES_COUNTER, &message)
             .await;

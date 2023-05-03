@@ -4,13 +4,14 @@ use std::fs;
 
 lazy_static! {
     static ref AWS_CLOUDFRONT_PRIVATE_KEY: String = fs::read_to_string(
-        std::env::var("AWS_CLOUDFRONT_PRIVATE_KEY").expect("Can't read AWS_CLOUDFRONT_PRIVATE_KEY")
+        std::env::var("AWS_CLOUDFRONT_PRIVATE_KEY")
+            .expect("Can't get AWS_CLOUDFRONT_PRIVATE_KEY env var")
     )
-    .expect("Can't read file");
-    static ref AWS_CLOUDFRONT_KEY_PAIR_ID: String =
-        std::env::var("AWS_CLOUDFRONT_KEY_PAIR_ID").expect("Can't read AWS_CLOUDFRONT_KEY_PAIR_ID");
+    .expect("Can't read AWS Cloudfront private key file");
+    static ref AWS_CLOUDFRONT_KEY_PAIR_ID: String = std::env::var("AWS_CLOUDFRONT_KEY_PAIR_ID")
+        .expect("Can't get AWS_CLOUDFRONT_KEY_PAIR_ID env var");
     static ref AWS_CLOUDFRONT_URL: String =
-        std::env::var("AWS_CLOUDFRONT_URL").expect("Can't read AWS_CLOUDFRONT_URL");
+        std::env::var("AWS_CLOUDFRONT_URL").expect("Can't get AWS_CLOUDFRONT_URL env var");
 }
 
 pub struct CloudFrontSigner;

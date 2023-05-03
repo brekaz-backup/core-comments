@@ -9,6 +9,8 @@ use crate::reply_comments::domain::{
 use async_graphql::*;
 use blumer_lib_auth_rs::{Role, RoleGuard, User};
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
+use blumer_lib_errors::AppError;
+use std::str::FromStr;
 use uuid::Uuid;
 
 #[derive(Default)]
@@ -24,9 +26,9 @@ impl ReplyCommentQuery {
         comment_id: ID,
         next_page: Option<String>,
     ) -> FieldResult<ReplyResponseOutput> {
-        let post_client = ctx.data::<PostAuthorization>().unwrap().clone();
+        let post_client = ctx.data::<PostAuthorization>()?.clone();
         let app_state: &AppState = ctx.data::<AppState>()?;
-        let user: User = User::get_user(ctx).expect("User not found");
+        let user: User = User::get_user(ctx).extend()?;
         let reply_comment_repository: &ReplyCommentRepository = &app_state.reply_comment_repository;
         let reply_comment_redis_repository: &ReplyCommentRedisRepository =
             &app_state.reply_comment_redis_repository;
@@ -35,17 +37,18 @@ impl ReplyCommentQuery {
             post_client,
             &reply_comment_repository,
             &reply_comment_redis_repository,
-            Uuid::parse_str(&post_id).unwrap(),
-            Uuid::parse_str(&comment_id).unwrap(),
+            Uuid::from_str(&post_id).map_err(|e| AppError::DatasourceError(e.to_string()))?,
+            Uuid::from_str(&comment_id).map_err(|e| AppError::DatasourceError(e.to_string()))?,
             user.user_id,
             next_page,
         )
-        .await?;
+        .await
+        .extend()?;
 
-        let reply_comments: Vec<CommentReplyOutput> = result
+        let reply_comments: Result<Vec<CommentReplyOutput>, AppError> = result
             .0
             .into_iter()
-            .map(|reply| ReplyCommentMapper::object(reply))
+            .map(|reply| Ok(ReplyCommentMapper::object(reply)?))
             .collect();
 
         let next_page: Option<String> = if result.1.is_empty() || result.1 == "" {
@@ -55,7 +58,7 @@ impl ReplyCommentQuery {
         };
 
         Ok(ReplyResponseOutput {
-            comments: reply_comments,
+            comments: reply_comments?,
             next_page,
         })
     }

@@ -1,17 +1,34 @@
 use super::objects::CommentOutput;
 use crate::comments::domain::CommentEntity;
-use chrono::{Local, TimeZone};
+use anyhow::Result;
+use blumer_lib_errors::AppError;
+use chrono::{DateTime, Duration, Local, TimeZone};
+
+fn get_datetime_from_scylla(duration: Duration) -> Result<String, AppError> {
+    let initial_datetime: DateTime<Local> = match Local.with_ymd_and_hms(1970, 1, 1, 0, 0, 0) {
+        chrono::LocalResult::None => {
+            return Err(AppError::DatasourceError(
+                "Error when converting scylla datetime to string".to_owned(),
+            ));
+        }
+        chrono::LocalResult::Single(d) => d,
+        chrono::LocalResult::Ambiguous(d1, _d2) => d1,
+    };
+
+    let final_datetime =
+        initial_datetime
+            .checked_add_signed(duration)
+            .ok_or(AppError::DatasourceError(
+                "Error when converting scylla datetime to string".to_owned(),
+            ))?;
+    Ok(final_datetime.format("%Y-%m-%dT%H:%M:%S.%3f%Z").to_string())
+}
 
 pub struct CommentMapper;
 
 impl CommentMapper {
-    pub fn object(entity: CommentEntity) -> CommentOutput {
-        let initial_datetime = Local.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap();
-        let final_datetime = initial_datetime
-            .checked_add_signed(entity.created_at)
-            .unwrap();
-        let created_at = final_datetime.format("%Y-%m-%dT%H:%M:%S.%3f%Z").to_string();
-        CommentOutput {
+    pub fn object(entity: CommentEntity) -> Result<CommentOutput, AppError> {
+        Ok(CommentOutput {
             id: entity.comment_id.to_string().into(),
             post_id: entity.post_id,
             user_id: entity.user_id,
@@ -19,20 +36,9 @@ impl CommentMapper {
             image: entity.image,
             audio: entity.audio,
             gif: entity.gif,
-            created_at,
-        }
+            created_at: get_datetime_from_scylla(entity.created_at).map_err(|_| {
+                AppError::ServerError("Error when converting scylla datetime to string".to_string())
+            })?,
+        })
     }
-
-    /*pub fn entity(object: CommentObject) -> CommentEntity {
-        CommentEntity {
-            comment_id: Uuid::parse_str(&object.id).unwrap(),
-            post_id: object.post_id,
-            user_id: object.user_id,
-            description: object.description,
-            image: object.image,
-            audio: object.audio,
-            gif: object.gif,
-            created_at: Duration::::parse(),
-        }
-    }*/
 }

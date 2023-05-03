@@ -7,5 +7,5 @@ fn main() {
         .file("schema/comment_upload.capnp")
         .file("schema/comment_counts.capnp")
         .run()
-        .expect("compiling schema");
+        .expect("compiling cap'n proto schema");
 }

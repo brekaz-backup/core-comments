@@ -23,9 +23,9 @@ impl CommentMutation {
         ctx: &Context<'_>,
         comment: CommentsCreateInput,
     ) -> FieldResult<CreateOutput> {
-        let post_client = ctx.data::<PostAuthorization>().unwrap().clone();
+        let post_client = ctx.data::<PostAuthorization>()?.clone();
         let app_state: &AppState = ctx.data::<AppState>()?;
-        let user: User = User::get_user(ctx).expect("User not found");
+        let user: User = User::get_user(ctx).extend()?;
         let comment_repository: &CommentRepository = &app_state.comment_repository;
         let kafka_producer: &KafkaProducer = &app_state.kafka_producer;
 
@@ -49,9 +49,9 @@ impl CommentMutation {
         ctx: &Context<'_>,
         comment: CommentsDeleteInput,
     ) -> FieldResult<bool> {
-        let post_client = ctx.data::<PostAuthorization>().unwrap().clone();
+        let post_client = ctx.data::<PostAuthorization>()?.clone();
         let app_state: &AppState = ctx.data::<AppState>()?;
-        let user: User = User::get_user(ctx).expect("User not found");
+        let user: User = User::get_user(ctx).extend()?;
         let comment_repository: &CommentRepository = &app_state.comment_repository;
         let reply_comment_repository: &ReplyCommentRepository = &app_state.reply_comment_repository;
         let kafka_producer: &KafkaProducer = &app_state.kafka_producer;

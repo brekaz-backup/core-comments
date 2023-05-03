@@ -29,7 +29,7 @@ impl CommentMapper {
         proto.set_active(entity.active);
 
         let mut buf_slice = vec![];
-        capnp::serialize::write_message(&mut buf_slice, &message).unwrap();
+        capnp::serialize::write_message(&mut buf_slice, &message)?;
         return Ok(buf_slice);
     }
 

@@ -13,6 +13,7 @@ use crate::utils::general::{can_view_post, comment_description_max_len};
 use anyhow::Result;
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use blumer_lib_errors::AppError;
+use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct CreateCommentUseCase;
@@ -25,17 +26,13 @@ impl CreateCommentUseCase {
         user_id: Uuid,
         kafka_producer: &KafkaProducer,
     ) -> Result<Uuid, AppError> {
-        let original_post = can_view_post(
-            post_authorization,
-            comment.post_id.to_string().parse::<Uuid>().unwrap(),
-            user_id,
-        )
-        .await?;
-
+        let comment_post_id = Uuid::from_str(&comment.post_id)
+            .map_err(|e| AppError::DatasourceError(e.to_string()))?;
+        let original_post = can_view_post(post_authorization, comment_post_id, user_id).await?;
         let comment_id = Uuid::new_v4();
-
         let gif: Option<String>;
         let active: bool;
+
         match comment.comment_type {
             CommentTypeInput::Text => {
                 gif = None;
@@ -47,7 +44,7 @@ impl CreateCommentUseCase {
                 if comment.description.to_owned().is_some() {
                     return Err(AppError::ValidationError {
                         reason: "Comment description not allowed".to_string(),
-                        code: "Comment description not allowed".to_string(),
+                        code: "DESCRIPTION_NOT_ALLOWED".to_string(),
                     });
                 }
             }
@@ -61,7 +58,7 @@ impl CreateCommentUseCase {
                 if comment.description.to_owned().is_some() {
                     return Err(AppError::ValidationError {
                         reason: "Comment description not allowed".to_string(),
-                        code: "Comment description not allowed".to_string(),
+                        code: "DESCRIPTION_NOT_ALLOWED".to_string(),
                     });
                 }
             }
@@ -73,17 +70,14 @@ impl CreateCommentUseCase {
             if over_max_len {
                 return Err(AppError::ValidationError {
                     reason: "Description is too long".to_string(),
-                    code: "Description is too long".to_string(),
+                    code: "DESCRIPTION_TOO_LONG".to_string(),
                 });
             }
         }
 
         let comment_db = CommentCreateEntity {
-            post_id: comment
-                .post_id
-                .to_string()
-                .parse::<Uuid>()
-                .expect("Error when parsing post_id from string"),
+            post_id: Uuid::from_str(&comment.post_id)
+                .map_err(|e| AppError::DatasourceError(e.to_string()))?,
             user_id,
             comment_id,
             description: comment.description,
@@ -105,7 +99,7 @@ impl CreateCommentUseCase {
             gif: comment_db.gif,
             active: comment_db.active,
         };
-        let message = CommentMapper::proto(&obj).await.unwrap();
+        let message = CommentMapper::proto(&obj).await?;
         kafka_producer
             .send_message(KAFKA_TOPIC_COMMENT_CREATE, &message)
             .await;
@@ -121,7 +115,7 @@ impl CreateCommentUseCase {
             reactions_count_5: 0,
             reactions_count_6: 0,
         };
-        let message = CommentCountsMapper::proto(&obj).await.unwrap();
+        let message = CommentCountsMapper::proto(&obj).await?;
         kafka_producer
             .send_message(KAFKA_TOPIC_CREATE_COMMENT_COUNTS, &message)
             .await;

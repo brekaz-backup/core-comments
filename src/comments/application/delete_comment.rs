@@ -14,6 +14,7 @@ use crate::utils::general::can_view_post;
 use anyhow::Result;
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use blumer_lib_errors::AppError;
+use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct DeleteCommentUseCase;
@@ -27,8 +28,10 @@ impl DeleteCommentUseCase {
         user_id: Uuid,
         kafka_producer: &KafkaProducer,
     ) -> Result<bool, AppError> {
-        let post_id = comment.post_id.to_string().parse::<Uuid>().unwrap();
-        let comment_id = comment.comment_id.to_string().parse::<Uuid>().unwrap();
+        let post_id = Uuid::from_str(&comment.post_id)
+            .map_err(|e| AppError::DatasourceError(e.to_string()))?;
+        let comment_id = Uuid::from_str(&comment.comment_id)
+            .map_err(|e| AppError::DatasourceError(e.to_string()))?;
 
         let original_post_owner_id = can_view_post(post_authorization, post_id, user_id)
             .await?
@@ -38,12 +41,13 @@ impl DeleteCommentUseCase {
 
         let comment_db = comment_repo
             .get_comment_by_id(&post_id, &comment_id)
-            .await
-            .expect("Error when getting comment")
-            .expect("Error when getting comment");
+            .await?
+            .ok_or(AppError::DatasourceError(
+                "Error getting comment".to_owned(),
+            ))?;
 
         if user_id != original_post_owner_id && comment_db.user_id != user_id {
-            return Ok(false);
+            return Err(AppError::Forbidden);
         }
 
         comment_repo.delete_comment(&post_id, &comment_id).await?;
@@ -58,7 +62,7 @@ impl DeleteCommentUseCase {
             post_owner_id: original_post_owner_id,
             comment_id,
         };
-        let message = CommentDeleteMapper::proto(&obj).await.unwrap();
+        let message = CommentDeleteMapper::proto(&obj).await?;
         kafka_producer
             .send_message(KAFKA_TOPIC_COMMENT_DELETE, &message)
             .await;
@@ -67,7 +71,7 @@ impl DeleteCommentUseCase {
             post_id,
             comment_id,
         };
-        let message = CommentCountsDeleteMapper::proto(&obj).await.unwrap();
+        let message = CommentCountsDeleteMapper::proto(&obj).await?;
         kafka_producer
             .send_message(KAFKA_TOPIC_DELETE_COMMENT_COUNTS, &message)
             .await;

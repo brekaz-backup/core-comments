@@ -36,23 +36,33 @@ impl<T: KafkaConsumerInterface> KafkaConsumer<T> {
 
     fn create_consumer(kafka_topics: Vec<&str>) -> StreamConsumer {
         let consumer: StreamConsumer = ClientConfig::new()
-            .set("group.id", std::env::var("APP_NAME").unwrap())
-            .set("bootstrap.servers", std::env::var("KAFKA_BROKER").unwrap())
+            .set(
+                "group.id",
+                std::env::var("APP_NAME").expect("Can't get APP_NAME env var"),
+            )
+            .set(
+                "bootstrap.servers",
+                std::env::var("KAFKA_BROKER").expect("Can't get KAFKA_BROKER env var"),
+            )
             .set(
                 "security.protocol",
-                std::env::var("KAFKA_SECURITY_PROTOCOL").unwrap(),
+                std::env::var("KAFKA_SECURITY_PROTOCOL")
+                    .expect("Can't get KAFKA_SECURITY_PROTOCOL env var"),
             )
             .set(
                 "sasl.mechanisms",
-                std::env::var("KAFKA_SASL_MECHANISMS").unwrap(),
+                std::env::var("KAFKA_SASL_MECHANISMS")
+                    .expect("Can't get KAFKA_SASL_MECHANISMS env var"),
             )
             .set(
                 "sasl.username",
-                std::env::var("KAFKA_SASL_USERNAME").unwrap(),
+                std::env::var("KAFKA_SASL_USERNAME")
+                    .expect("Can't get KAFKA_SASL_USERNAME env var"),
             )
             .set(
                 "sasl.password",
-                std::env::var("KAFKA_SASL_PASSWORD").unwrap(),
+                std::env::var("KAFKA_SASL_PASSWORD")
+                    .expect("Can't get KAFKA_SASL_PASSWORD env var"),
             )
             .set("enable.partition.eof", "false")
             .set("session.timeout.ms", "45000")

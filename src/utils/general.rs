@@ -23,8 +23,8 @@ pub async fn can_view_post(
 
     if !can_view_post.valid {
         return Err(AppError::ValidationError {
-            reason: can_view_post.reason.to_string(),
-            code: can_view_post.reason,
+            reason: can_view_post.reason,
+            code: "CAN_NOT_SEE_POST".to_owned(),
         });
     }
     Ok(can_view_post)

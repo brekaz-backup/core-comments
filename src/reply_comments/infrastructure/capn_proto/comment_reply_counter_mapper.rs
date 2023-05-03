@@ -14,7 +14,7 @@ impl CommentRepliesCounterMapper {
         proto.set_replies_count(entity.replies_count);
 
         let mut buf_slice = vec![];
-        capnp::serialize::write_message(&mut buf_slice, &message).unwrap();
+        capnp::serialize::write_message(&mut buf_slice, &message)?;
         return Ok(buf_slice);
     }
 

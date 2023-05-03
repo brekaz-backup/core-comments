@@ -19,6 +19,7 @@ use crate::utils::general::{can_view_post, comment_description_max_len};
 use anyhow::Result;
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use blumer_lib_errors::AppError;
+use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct CreateReplyCommentUseCase;
@@ -32,28 +33,24 @@ impl CreateReplyCommentUseCase {
         user_id: Uuid,
         kafka_producer: &KafkaProducer,
     ) -> Result<Uuid, AppError> {
-        let post_owner_id = can_view_post(
-            post_authorization,
-            reply_comment.post_id.to_string().parse::<Uuid>().unwrap(),
-            user_id,
-        )
-        .await?
-        .data
-        .unwrap()
-        .owner_id;
-
         let reply_id = Uuid::new_v4();
+        let reply_comment_post_id = Uuid::from_str(&reply_comment.post_id)
+            .map_err(|e| AppError::DatasourceError(e.to_string()))?;
+        let reply_comment_comment_id = Uuid::from_str(&reply_comment.comment_id)
+            .map_err(|e| AppError::DatasourceError(e.to_string()))?;
+
+        let post_owner_id = can_view_post(post_authorization, reply_comment_post_id, user_id)
+            .await?
+            .data
+            .unwrap()
+            .owner_id;
 
         let comment_owner_id = comment_repo
-            .get_comment_by_id(
-                &Uuid::parse_str(&reply_comment.post_id.to_string())
-                    .expect("Error when parsing post_id"),
-                &Uuid::parse_str(&reply_comment.comment_id.to_string())
-                    .expect("Error when parsing comment_id"),
-            )
-            .await
-            .expect("Error when getting comment")
-            .expect("Error when getting comment")
+            .get_comment_by_id(&reply_comment_post_id, &reply_comment_comment_id)
+            .await?
+            .ok_or(AppError::DatasourceError(
+                "Error getting comment".to_owned(),
+            ))?
             .user_id;
 
         let gif: Option<String>;
@@ -68,8 +65,8 @@ impl CreateReplyCommentUseCase {
                 active = true;
                 if reply_comment.description.to_owned().is_some() {
                     return Err(AppError::ValidationError {
-                        reason: "Comment description not allowed".to_string(),
-                        code: "Comment description not allowed".to_string(),
+                        reason: "Comment description not allowed".to_owned(),
+                        code: "DESCRIPTION_NOT_ALLOWED".to_owned(),
                     });
                 }
             }
@@ -82,8 +79,8 @@ impl CreateReplyCommentUseCase {
                 active = false;
                 if reply_comment.description.to_owned().is_some() {
                     return Err(AppError::ValidationError {
-                        reason: "Comment description not allowed".to_string(),
-                        code: "Comment description not allowed".to_string(),
+                        reason: "Comment description not allowed".to_owned(),
+                        code: "DESCRIPTION_NOT_ALLOWED".to_owned(),
                     });
                 }
             }
@@ -94,23 +91,15 @@ impl CreateReplyCommentUseCase {
                 comment_description_max_len(&reply_comment.description.to_owned().unwrap());
             if over_max_len {
                 return Err(AppError::ValidationError {
-                    reason: "Description is too long".to_string(),
-                    code: "Description is too long".to_string(),
+                    reason: "Description is too long".to_owned(),
+                    code: "DESCRIPTION_TO_LONG".to_owned(),
                 });
             }
         }
 
         let comment_reply_db = CommentReplyCreateEntity {
-            post_id: reply_comment
-                .post_id
-                .to_string()
-                .parse::<Uuid>()
-                .expect("Error when parsing post_id from string"),
-            comment_id: reply_comment
-                .comment_id
-                .to_string()
-                .parse::<Uuid>()
-                .expect("Error when parsing post_id from string"),
+            post_id: reply_comment_post_id,
+            comment_id: reply_comment_comment_id,
             reply_id,
             user_id,
             description: reply_comment.description,
@@ -137,7 +126,7 @@ impl CreateReplyCommentUseCase {
             active: comment_reply_db.active,
             post_owner_id: post_owner_id,
         };
-        let message = CommentReplyCreateMapper::proto(&obj).await.unwrap();
+        let message = CommentReplyCreateMapper::proto(&obj).await?;
         kafka_producer
             .send_message(KAFKA_TOPIC_COMMENT_REPLY_CREATE, &message)
             .await;
@@ -152,7 +141,7 @@ impl CreateReplyCommentUseCase {
             reactions_count_5: 0,
             reactions_count_6: 0,
         };
-        let message = ReplyCountsMapper::proto(&obj).await.unwrap();
+        let message = ReplyCountsMapper::proto(&obj).await?;
         kafka_producer
             .send_message(KAFKA_TOPIC_CREATE_REPLY_COUNTS, &message)
             .await;
@@ -161,7 +150,7 @@ impl CreateReplyCommentUseCase {
             comment_id: comment_reply_db.comment_id,
             replies_count: 1,
         };
-        let message = CommentRepliesCounterMapper::proto(&obj).await.unwrap();
+        let message = CommentRepliesCounterMapper::proto(&obj).await?;
         kafka_producer
             .send_message(KAFKA_TOPIC_COMMENT_REPLIES_COUNTER, &message)
             .await;

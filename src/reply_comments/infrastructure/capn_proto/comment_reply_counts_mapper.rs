@@ -20,7 +20,7 @@ impl ReplyCountsMapper {
         proto.set_reactions_count6(entity.reactions_count_6);
 
         let mut buf_slice = vec![];
-        capnp::serialize::write_message(&mut buf_slice, &message).unwrap();
+        capnp::serialize::write_message(&mut buf_slice, &message)?;
         return Ok(buf_slice);
     }
 

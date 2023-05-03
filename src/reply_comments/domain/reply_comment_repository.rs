@@ -157,7 +157,7 @@ impl ReplyCommentRepositoryInterface for &ReplyCommentRepository {
         let mut comment_replies: Vec<CommentReplyEntity> = Vec::new();
         while let Some(next_row_res) = rows_stream.next() {
             let mut next_row: CommentReplyEntity =
-                next_row_res.expect("Error when getting next row in comments by post id");
+                next_row_res.map_err(|e| AppError::DatasourceError(e.to_string()))?;
             // Converting fields that comes: Some("") to None
             next_row.image = if next_row.image == Some("".to_string()) {
                 None
@@ -199,8 +199,7 @@ impl ReplyCommentRepositoryInterface for &ReplyCommentRepository {
                     reply_comment.reply_id,
                 ),
             )
-            .await
-            .expect("Error when trying to delete comment reply");
+            .await?;
         Ok(())
     }
 
@@ -217,8 +216,7 @@ impl ReplyCommentRepositoryInterface for &ReplyCommentRepository {
         let _ = self
             .session
             .execute(&query_statement, (post_id, comment_id))
-            .await
-            .expect("Error when trying to delete comment replies by comment id");
+            .await?;
         Ok(())
     }
 
@@ -303,8 +301,7 @@ impl ReplyCommentRepositoryInterface for &ReplyCommentRepository {
                     reply_comment.reply_id,
                 ),
             )
-            .await
-            .expect("Error when trying to delete comment reply");
+            .await?;
         Ok(())
     }
 }

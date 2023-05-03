@@ -82,7 +82,7 @@ impl CommentRepositoryInterface for &CommentRepository {
         let mut comments: Vec<CommentEntity> = Vec::new();
         while let Some(next_row_res) = rows_stream.next() {
             let mut next_row: CommentEntity =
-                next_row_res.expect("Error when getting next row in comments by post id");
+                next_row_res.map_err(|e| AppError::DatasourceError(e.to_string()))?;
             // Converting fields that comes: Some("") to None
             next_row.image = if next_row.image == Some("".to_string()) {
                 None
@@ -166,8 +166,7 @@ impl CommentRepositoryInterface for &CommentRepository {
         let _ = self
             .session
             .execute(&query_statement, (post_id, comment_id))
-            .await
-            .expect("Error when trying to delete comment");
+            .await?;
 
         Ok(())
     }
@@ -232,8 +231,7 @@ impl CommentRepositoryInterface for &CommentRepository {
         let _ = self
             .session
             .execute(&query_statement, (post_id, comment_id))
-            .await
-            .expect("Error when trying to delete comment");
+            .await?;
 
         Ok(())
     }

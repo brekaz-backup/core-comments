@@ -14,7 +14,7 @@ impl ReplyCountsDeleteMapper {
         proto.set_reply_id(&entity.reply_id.to_string());
 
         let mut buf_slice = vec![];
-        capnp::serialize::write_message(&mut buf_slice, &message).unwrap();
+        capnp::serialize::write_message(&mut buf_slice, &message)?;
         return Ok(buf_slice);
     }
 
