@@ -97,7 +97,7 @@ jobs:
           # Push docker image to AWS ECR
           docker push $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
           docker push $ECR_REGISTRY/$IMAGE_NAME:latest
-  
+
   continuous-delivery:
     runs-on: ubuntu-latest
     needs: [
@@ -165,4 +165,3 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
         if: always()
-
