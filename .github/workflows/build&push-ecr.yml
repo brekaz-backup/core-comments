@@ -43,6 +43,9 @@ env:
   AWS_SM_PIPELINE_ID: prod/credentials/server/pipeline
   AWS_SM_PROD_ID: prod/credentials/server/core/general
 
+  SG_PATH: ${{ vars.SG_PATH}}
+  SG_COMMAND_RESTART: 'sh /home/ubuntu/app/update_sg.sh'
+
   APP_PATH: ${{vars.APP_PATH}}
   # APP_COMMAND_RESTART: 'docker compose pull && docker compose up --build -d && curl localhost:3006'
   APP_COMMAND_RESTART: 'docker compose pull && docker compose up -d && sleep 5'
@@ -156,8 +159,17 @@ jobs:
           password: ${{ env.EC2_PIPELINE_PASS }}
           script: |
             cd /home/ubuntu && ./pipeline.sh ${{ env.EC2_PROD_SERVER_USER }} ${{ env.EC2_PROD_SERVER_IP }} ./keys/${{ env.EC2_PROD_SERVER_PEM }}.pem ${{ env.APP_PATH }} '${{ env.APP_COMMAND_RESTART }}'
-      - name: Remove Github Actions IP from security group
 
+      - name: SSH run script to delivery - restart Super Graph
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.EC2_PIPELINE_IP }}
+          username: ${{ env.EC2_PIPELINE_USER }}
+          password: ${{ env.EC2_PIPELINE_PASS }}
+          script: |
+            cd /home/ubuntu && ./pipeline.sh ${{ env.EC2_PROD_SERVER_USER }} ${{ env.EC2_PROD_SERVER_IP }} ./keys/${{ env.EC2_PROD_SERVER_PEM }}.pem ${{ env.SG_PATH }} '${{ env.SG_COMMAND_RESTART }}'
+            
+      - name: Remove Github Actions IP from security group
         run: |
           aws ec2 revoke-security-group-ingress --group-id ${{ env.AWS_SG_ID }} --protocol tcp --port 22 --cidr "${{ env.JOB_PUBLIC_IP }}/32"
         env:
