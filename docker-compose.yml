@@ -15,7 +15,7 @@ services:
       DATABASE_PASSWORD: h7LgFvrGk6NJf1I
       REDIS_URL: redis://redis-container:6379/5
 
-      POST_AUTHORIZATION_SERVICE_URL: "http://authorization-rpc:50052"
+      POST_AUTHORIZATION_SERVICE_URL: "http://authorization-rpc-go-service:50052"
 
       KAFKA_BROKER: "b-1-public.devclustermsk.r795ga.c20.kafka.us-east-1.amazonaws.com:9196,b-3-public.devclustermsk.r795ga.c20.kafka.us-east-1.amazonaws.com:9196,b-2-public.devclustermsk.r795ga.c20.kafka.us-east-1.amazonaws.com:9196"
       KAFKA_SECURITY_PROTOCOL: "SASL_SSL"
