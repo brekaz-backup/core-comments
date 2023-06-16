@@ -3,6 +3,13 @@ use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use blumer_lib_errors::AppError;
 use uuid::Uuid;
 
+pub fn comment_description_contains_forbidden_words(comment: &str) -> bool {
+    let blacklist_comments = ["http://", "https://", "www.", ".com", ".app", ".link"];
+    blacklist_comments
+        .iter()
+        .any(|&element| comment.contains(element))
+}
+
 pub fn comment_description_max_len(comment: &str) -> bool {
     const MAX_LEN: usize = 250;
     comment.chars().count() > MAX_LEN

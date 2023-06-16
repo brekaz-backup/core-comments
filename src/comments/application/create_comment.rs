@@ -9,7 +9,9 @@ use crate::comments::infrastructure::graphql::objects::{CommentTypeInput, Commen
 use crate::comments::infrastructure::kafka::{
     KAFKA_TOPIC_COMMENT_CREATE, KAFKA_TOPIC_CREATE_COMMENT_COUNTS,
 };
-use crate::utils::general::{can_view_post, comment_description_max_len};
+use crate::utils::general::{
+    can_view_post, comment_description_contains_forbidden_words, comment_description_max_len,
+};
 use anyhow::Result;
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use blumer_lib_errors::AppError;
@@ -65,12 +67,18 @@ impl CreateCommentUseCase {
         };
 
         if comment.description.to_owned().is_some() {
-            let over_max_len: bool =
-                comment_description_max_len(&comment.description.to_owned().unwrap());
-            if over_max_len {
+            if comment_description_max_len(&comment.description.to_owned().unwrap()) {
                 return Err(AppError::ValidationError {
                     reason: "Description is too long".to_string(),
                     code: "DESCRIPTION_TOO_LONG".to_string(),
+                });
+            }
+            if comment_description_contains_forbidden_words(
+                &comment.description.to_owned().unwrap(),
+            ) {
+                return Err(AppError::ValidationError {
+                    reason: "Description contains forbidden words".to_string(),
+                    code: "DESCRIPTION_CONTAINS_FORBIDDEN_WORDS".to_string(),
                 });
             }
         }
