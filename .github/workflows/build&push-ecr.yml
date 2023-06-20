@@ -168,6 +168,7 @@ jobs:
           password: ${{ env.EC2_PIPELINE_PASS }}
           script: |
             cd /home/ubuntu && ./pipeline.sh ${{ env.EC2_PROD_SERVER_USER }} ${{ env.EC2_PROD_SERVER_IP }} ./keys/${{ env.EC2_PROD_SERVER_PEM }}.pem ${{ env.SG_PATH }} '${{ env.SG_COMMAND_RESTART }}'
+        if: contains(github.event.head_commit.message, 'feat:rebuild:') || contains(github.event.head_commit.message, 'fix:rebuild:')
             
       - name: Remove Github Actions IP from security group
         run: |
