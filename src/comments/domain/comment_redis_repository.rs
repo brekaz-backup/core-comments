@@ -1,15 +1,15 @@
 use super::CommentRedisRepositoryInterface;
 use async_trait::async_trait;
 use blumer_lib_errors::AppError;
-use redis::{aio::ConnectionManager, Client as RedisClient};
+use redis::cluster::ClusterClient;
 
 #[derive(Clone)]
 pub struct CommentRedisRepository {
-    session: RedisClient,
+    session: ClusterClient,
 }
 
 impl CommentRedisRepository {
-    pub fn new(session: RedisClient) -> Self {
+    pub fn new(session: ClusterClient) -> Self {
         CommentRedisRepository { session }
     }
 }
@@ -20,9 +20,9 @@ impl CommentRedisRepositoryInterface for &CommentRedisRepository {
         &self,
         comment_page_state_id: &String,
     ) -> Result<Option<Vec<u8>>, AppError> {
-        let mut conn: ConnectionManager = self
+        let mut conn = self
             .session
-            .get_tokio_connection_manager()
+            .get_async_connection()
             .await
             .map_err(|e| AppError::DatasourceError(e.to_string()))?;
 
@@ -39,9 +39,9 @@ impl CommentRedisRepositoryInterface for &CommentRedisRepository {
         comment_page_state_id: &String,
         data: &Vec<u8>,
     ) -> Result<(), AppError> {
-        let mut conn: ConnectionManager = self
+        let mut conn = self
             .session
-            .get_tokio_connection_manager()
+            .get_async_connection()
             .await
             .map_err(|e| AppError::DatasourceError(e.to_string()))?;
 
@@ -64,9 +64,9 @@ impl CommentRedisRepositoryInterface for &CommentRedisRepository {
         &self,
         comment_page_state_id: &String,
     ) -> Result<(), AppError> {
-        let mut conn: ConnectionManager = self
+        let mut conn = self
             .session
-            .get_tokio_connection_manager()
+            .get_async_connection()
             .await
             .map_err(|e| AppError::DatasourceError(e.to_string()))?;
 

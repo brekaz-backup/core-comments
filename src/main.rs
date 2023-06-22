@@ -10,6 +10,7 @@ use crate::adapters::kafka::{KafkaConsumer, KafkaProducer};
 use crate::comments::domain::{CommentRedisRepository, CommentRepository};
 use crate::infrastructure::graphql::config::{configure_service, create_schema_with_context};
 use crate::infrastructure::graphql::state::AppState;
+use crate::infrastructure::redis::config::RedisConfig;
 use crate::infrastructure::scylladb::connection::ScyllaConfig;
 use crate::infrastructure::scylladb::initialization::ScyllaInit;
 use crate::media_comments::infrastructure::kafka::{
@@ -20,6 +21,7 @@ use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use blumer_lib_authorization_rs::clients::post::PostAuthorization;
 use dotenv::dotenv;
+use redis::cluster::ClusterClient;
 use scylla::Session;
 use std::sync::Arc;
 
@@ -37,9 +39,7 @@ async fn main() -> std::io::Result<()> {
     ScyllaInit::create_materialized_views(&scylla_session).await;
     let scylla_session: Arc<Session> = Arc::new(ScyllaConfig::create_scylla_session().await);
     //redis
-    let redis =
-        redis::Client::open(std::env::var("REDIS_URL").expect("Can't get REDIS_URL env var"))
-            .expect("Can't connect to redis");
+    let redis_client: ClusterClient = RedisConfig::connection().await;
     // initialize authorization service client
     let post_authorization: PostAuthorization = PostAuthorization::new(
         std::env::var("POST_AUTHORIZATION_SERVICE_URL")
@@ -50,9 +50,9 @@ async fn main() -> std::io::Result<()> {
 
     let state: AppState = AppState {
         comment_repository: CommentRepository::new(scylla_session.clone()),
-        comment_redis_repository: CommentRedisRepository::new(redis.clone()),
+        comment_redis_repository: CommentRedisRepository::new(redis_client.clone()),
         reply_comment_repository: ReplyCommentRepository::new(scylla_session.clone()),
-        reply_comment_redis_repository: ReplyCommentRedisRepository::new(redis.clone()),
+        reply_comment_redis_repository: ReplyCommentRedisRepository::new(redis_client.clone()),
         kafka_producer: KafkaProducer::new(),
     };
     let schema = web::Data::new(create_schema_with_context(state, post_authorization));
