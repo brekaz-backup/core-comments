@@ -2,8 +2,7 @@ name: deployment microservice
 on: 
   push:
     branches:
-      - main
-      - master
+      - dev
 env:
   # CLI envs
   KUBECTL_VERSION: v1.26.2
