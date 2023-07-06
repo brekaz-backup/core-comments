@@ -32,7 +32,7 @@ env:
   K8S_NS_PND: production
   K8S_CPORT: 3001
   K8S_C_GRAPHQL_PORT: 5001
-  IMAGE_TAG: ${{ github.sha }}
+  IMAGE_TAG: dev
 
   # EKS variables
   EKS_CLUSTER_CHAT_PDN: prod-eks-chat-services
@@ -94,11 +94,9 @@ jobs:
           # Build docker image
           docker build -t $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG -f $DOCKER_FILE_NAME ./
           
-          # Tag docker image
-          docker tag $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG $ECR_REGISTRY/$IMAGE_NAME:latest
           # Push docker image to AWS ECR
           docker push $ECR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$IMAGE_NAME:latest
+
 
   continuous-delivery:
     runs-on: ubuntu-latest
