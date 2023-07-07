@@ -67,6 +67,12 @@ impl CreateCommentUseCase {
         };
 
         if comment.description.to_owned().is_some() {
+            if comment.description.to_owned().unwrap() == "" {
+                return Err(AppError::ValidationError {
+                    reason: "Description is empty".to_string(),
+                    code: "DESCRIPTION_IS_EMPTY".to_string(),
+                });
+            }
             if comment_description_max_len(&comment.description.to_owned().unwrap()) {
                 return Err(AppError::ValidationError {
                     reason: "Description is too long".to_string(),

@@ -87,6 +87,12 @@ impl CreateReplyCommentUseCase {
         };
 
         if reply_comment.description.to_owned().is_some() {
+            if reply_comment.description.to_owned().unwrap() == "" {
+                return Err(AppError::ValidationError {
+                    reason: "Description is empty".to_string(),
+                    code: "DESCRIPTION_IS_EMPTY".to_string(),
+                });
+            }
             let over_max_len: bool =
                 comment_description_max_len(&reply_comment.description.to_owned().unwrap());
             if over_max_len {

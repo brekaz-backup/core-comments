@@ -23,8 +23,8 @@ impl CommentMutation {
         ctx: &Context<'_>,
         comment: CommentsCreateInput,
     ) -> FieldResult<CreateOutput> {
-        let post_client = ctx.data::<PostAuthorization>()?.clone();
-        let app_state: &AppState = ctx.data::<AppState>()?;
+        let post_client = ctx.data::<PostAuthorization>().extend()?.clone();
+        let app_state: &AppState = ctx.data::<AppState>().extend()?;
         let user: User = User::get_user(ctx).extend()?;
         let comment_repository: &CommentRepository = &app_state.comment_repository;
         let kafka_producer: &KafkaProducer = &app_state.kafka_producer;
@@ -36,7 +36,8 @@ impl CommentMutation {
             user.user_id,
             kafka_producer,
         )
-        .await?;
+        .await
+        .extend()?;
 
         Ok(CreateOutput {
             status: Status::Created,
@@ -49,8 +50,8 @@ impl CommentMutation {
         ctx: &Context<'_>,
         comment: CommentsDeleteInput,
     ) -> FieldResult<bool> {
-        let post_client = ctx.data::<PostAuthorization>()?.clone();
-        let app_state: &AppState = ctx.data::<AppState>()?;
+        let post_client = ctx.data::<PostAuthorization>().extend()?.clone();
+        let app_state: &AppState = ctx.data::<AppState>().extend()?;
         let user: User = User::get_user(ctx).extend()?;
         let comment_repository: &CommentRepository = &app_state.comment_repository;
         let reply_comment_repository: &ReplyCommentRepository = &app_state.reply_comment_repository;
@@ -64,7 +65,8 @@ impl CommentMutation {
             user.user_id,
             kafka_producer,
         )
-        .await?;
+        .await
+        .extend()?;
 
         Ok(result)
     }
