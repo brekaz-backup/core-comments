@@ -22,8 +22,8 @@ impl CommentQuery {
         post_id: ID,
         next_page: Option<String>,
     ) -> FieldResult<CommentResponseOutput> {
-        let post_client = ctx.data::<PostAuthorization>()?.clone();
-        let app_state: &AppState = ctx.data::<AppState>()?;
+        let post_client = ctx.data::<PostAuthorization>().extend()?.clone();
+        let app_state: &AppState = ctx.data::<AppState>().extend()?;
         let user: User = User::get_user(ctx).extend()?;
         let comment_repository: &CommentRepository = &app_state.comment_repository;
         let comment_redis_repository: &CommentRedisRepository = &app_state.comment_redis_repository;
@@ -32,7 +32,9 @@ impl CommentQuery {
             post_client,
             &comment_repository,
             &comment_redis_repository,
-            Uuid::from_str(&post_id).map_err(|e| AppError::DatasourceError(e.to_string()))?,
+            Uuid::from_str(&post_id)
+                .map_err(|e| AppError::DatasourceError(e.to_string()))
+                .extend()?,
             user.user_id,
             next_page,
         )
@@ -52,7 +54,7 @@ impl CommentQuery {
         };
 
         Ok(CommentResponseOutput {
-            comments: comments?,
+            comments: comments.extend()?,
             next_page,
         })
     }

@@ -26,8 +26,8 @@ impl ReplyCommentQuery {
         comment_id: ID,
         next_page: Option<String>,
     ) -> FieldResult<ReplyResponseOutput> {
-        let post_client = ctx.data::<PostAuthorization>()?.clone();
-        let app_state: &AppState = ctx.data::<AppState>()?;
+        let post_client = ctx.data::<PostAuthorization>().extend()?.clone();
+        let app_state: &AppState = ctx.data::<AppState>().extend()?;
         let user: User = User::get_user(ctx).extend()?;
         let reply_comment_repository: &ReplyCommentRepository = &app_state.reply_comment_repository;
         let reply_comment_redis_repository: &ReplyCommentRedisRepository =
@@ -37,8 +37,12 @@ impl ReplyCommentQuery {
             post_client,
             &reply_comment_repository,
             &reply_comment_redis_repository,
-            Uuid::from_str(&post_id).map_err(|e| AppError::DatasourceError(e.to_string()))?,
-            Uuid::from_str(&comment_id).map_err(|e| AppError::DatasourceError(e.to_string()))?,
+            Uuid::from_str(&post_id)
+                .map_err(|e| AppError::DatasourceError(e.to_string()))
+                .extend()?,
+            Uuid::from_str(&comment_id)
+                .map_err(|e| AppError::DatasourceError(e.to_string()))
+                .extend()?,
             user.user_id,
             next_page,
         )
